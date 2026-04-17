@@ -18,13 +18,17 @@ A Flask-based multi-agent AI chat app where you summon AI agents by @mentioning 
 
 ## Agents
 
-| Agent | Model | Personality |
-|-------|-------|-------------|
-| Mistral | `mistral` (Ollama) | Sharp analytical thinker |
-| Phi3 | `phi3` (Ollama) | Creative, lateral thinker |
-| Gemma2 | `gemma2:2b` (Ollama) | Careful, balanced summarizer |
-| DeepSeek | `deepseek-r1:7b` (Ollama) | Deep step-by-step reasoner |
+The 4 local agents use **any Ollama-compatible model** — just edit the `"model"` field in `agents.py`. The defaults below were chosen because they run well under 8B parameters (low VRAM/RAM), but you can swap in `llama3`, `qwen2`, `phi4`, `mistral-nemo`, or anything else your hardware can handle.
+
+| Agent | Default Model | Personality |
+|-------|--------------|-------------|
+| Mistral | `mistral` (~4GB) | Sharp analytical thinker |
+| Phi3 | `phi3` (~2GB) | Creative, lateral thinker |
+| Gemma2 | `gemma2:2b` (~1.5GB) | Careful, balanced summarizer |
+| DeepSeek | `deepseek-r1:7b` (~4.7GB) | Deep step-by-step reasoner |
 | Claude | `claude-sonnet-4-6` (API) | Collaborative, nuanced advisor |
+
+> **Swapping a model:** open `agents.py`, find the agent dict, change the `"model"` value to any model name from `ollama list`. That's it.
 
 ---
 
