@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Meeting Room</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f0f13;
+    color: #e0ddd5;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header {
+    background: #1a1a22;
+    border-bottom: 1px solid #2a2a35;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header h1 {
+    font-size: 16px;
+    font-weight: 500;
+    color: #e0ddd5;
+  }
+
+  .header p {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #1D9E75;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .agents-bar {
+    background: #15151d;
+    border-bottom: 1px solid #2a2a35;
+    padding: 10px 20px;
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .agent-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .agent-chip:hover { opacity: 0.8; }
+
+  .agent-chip .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* Talk banner */
+  .talk-banner {
+    display: none;
+    background: #0d1a12;
+    border-bottom: 1px solid #1D9E7555;
+    padding: 10px 20px;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 12px;
+  }
+
+  .talk-banner.active { display: flex; }
+
+  .talk-banner-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff4444;
+    flex-shrink: 0;
+    animation: livepulse 1s ease-in-out infinite;
+  }
+
+  @keyframes livepulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .talk-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #1D9E75;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .talk-topic {
+    font-size: 12px;
+    color: #aaa;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .talk-banner-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .talk-timer {
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #e0ddd5;
+    min-width: 38px;
+    text-align: right;
+  }
+
+  .talk-timer.summarizing {
+    color: #BA7517;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .stop-btn {
+    background: #2a1010;
+    border: 1px solid #ff444444;
+    color: #ff6666;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .stop-btn:hover { background: #3a1515; border-color: #ff4444; }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: #2a2a35; border-radius: 2px; }
+
+  .msg-group { display: flex; flex-direction: column; gap: 4px; }
+
+  .msg-user {
+    align-self: flex-end;
+    max-width: 70%;
+  }
+
+  .msg-user .bubble {
+    background: #2a2a45;
+    border: 1px solid #3a3a55;
+    color: #c8c5ff;
+    padding: 10px 14px;
+    border-radius: 16px 16px 4px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .msg-user .name {
+    font-size: 11px;
+    color: #666;
+    text-align: right;
+    margin-bottom: 4px;
+  }
+
+  .msg-agent { max-width: 80%; }
+
+  .msg-agent .name {
+    font-size: 11px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .msg-agent .round-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: #2a2a35;
+    color: #888;
+    font-weight: 400;
+  }
+
+  .round-badge.live {
+    background: #1a2a1a;
+    color: #1D9E75;
+    border: 1px solid #1D9E7533;
+  }
+
+  .msg-agent .bubble {
+    background: #1a1a22;
+    border: 1px solid #2a2a35;
+    padding: 12px 14px;
+    border-radius: 4px 16px 16px 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    position: relative;
+  }
+
+  .msg-agent .bubble:hover .save-btn { opacity: 1; }
+
+  .save-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #2a2a35;
+    border: 1px solid #3a3a45;
+    color: #888;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .save-btn:hover { background: #3a3a45; color: #aaa; }
+
+  .summary-bubble {
+    background: #1a1508;
+    border: 1px solid #BA7517;
+    border-left: 3px solid #BA7517;
+  }
+
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    font-size: 13px;
+    color: #555;
+  }
+
+  .typing-dots {
+    display: flex;
+    gap: 3px;
+  }
+
+  .typing-dots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #555;
+    animation: blink 1.2s ease-in-out infinite;
+  }
+
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes blink {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  .input-area {
+    background: #1a1a22;
+    border-top: 1px solid #2a2a35;
+    padding: 16px 20px;
+    flex-shrink: 0;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .input-box {
+    flex: 1;
+    background: #0f0f13;
+    border: 1px solid #2a2a35;
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: #e0ddd5;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    min-height: 44px;
+    max-height: 120px;
+    line-height: 1.5;
+    transition: border-color 0.15s;
+  }
+
+  .input-box:focus {
+    outline: none;
+    border-color: #3a3a55;
+  }
+
+  .input-box::placeholder { color: #444; }
+
+  .send-btn {
+    background: #2a2a45;
+    border: 1px solid #3a3a55;
+    color: #c8c5ff;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .send-btn:hover { background: #3a3a55; }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .hints {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .hint {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: #15151d;
+    border: 1px solid #2a2a35;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .hint:hover { color: #888; border-color: #3a3a45; }
+
+  .btn-clear {
+    background: transparent;
+    border: 1px solid #2a2a35;
+    color: #444;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-clear:hover { color: #888; border-color: #3a3a45; }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #333;
+    padding: 40px;
+    text-align: center;
+  }
+
+  .empty-state h2 { font-size: 18px; font-weight: 500; color: #444; }
+  .empty-state p { font-size: 13px; line-height: 1.6; max-width: 420px; }
+
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1D9E75;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="status-dot"></div>
+    <div>
+      <h1>Agent Meeting Room</h1>
+      <p>4 local AI agents + Claude on demand</p>
+    </div>
+  </div>
+  <button class="btn-clear" onclick="clearChat()">Clear chat</button>
+</div>
+
+<div class="agents-bar">
+  <div class="agent-chip" style="color:#378ADD;border-color:#378ADD22;background:#378ADD11"
+       onclick="insertMention('@mistral')">
+    <div class="dot" style="background:#378ADD"></div>Mistral
+  </div>
+  <div class="agent-chip" style="color:#1D9E75;border-color:#1D9E7522;background:#1D9E7511"
+       onclick="insertMention('@phi3')">
+    <div class="dot" style="background:#1D9E75"></div>Phi3
+  </div>
+  <div class="agent-chip" style="color:#7F77DD;border-color:#7F77DD22;background:#7F77DD11"
+       onclick="insertMention('@gemma2')">
+    <div class="dot" style="background:#7F77DD"></div>Gemma2
+  </div>
+  <div class="agent-chip" style="color:#E05C5C;border-color:#E05C5C22;background:#E05C5C11"
+       onclick="insertMention('@deepseek')">
+    <div class="dot" style="background:#E05C5C"></div>DeepSeek
+  </div>
+  <div class="agent-chip" style="color:#534AB7;border-color:#534AB722;background:#534AB711"
+       onclick="insertMention('@claude')">
+    <div class="dot" style="background:#534AB7"></div>Claude
+  </div>
+  <div class="agent-chip" style="color:#e0ddd5;border-color:#33333a;background:#1a1a22"
+       onclick="insertMention('@all')">
+    <div class="dot" style="background:#e0ddd5"></div>All agents
+  </div>
+  <div class="agent-chip" style="color:#BA7517;border-color:#BA751722;background:#BA751711"
+       onclick="insertMention('@debate')">
+    <div class="dot" style="background:#BA7517"></div>Debate
+  </div>
+  <div class="agent-chip" style="color:#1D9E75;border-color:#1D9E7544;background:#0d1a12"
+       onclick="insertMention('@talk')">
+    <div class="dot" style="background:#1D9E75;animation:livepulse 1s ease-in-out infinite"></div>Free Talk
+  </div>
+</div>
+
+<!-- Talk mode banner (shown during active session) -->
+<div class="talk-banner" id="talk-banner">
+  <div class="talk-banner-left">
+    <div class="live-dot"></div>
+    <span class="talk-label">Free Talk</span>
+    <span class="talk-topic" id="talk-topic-label"></span>
+  </div>
+  <div class="talk-banner-right">
+    <span class="talk-timer" id="talk-timer">5:00</span>
+    <button class="stop-btn" onclick="stopTalk()">Stop</button>
+  </div>
+</div>
+
+<div class="messages" id="messages">
+  <div class="empty-state" id="empty">
+    <h2>Meeting room is open</h2>
+    <p>
+      Type a message and mention agents to bring them in.<br><br>
+      <strong style="color:#555">@mistral</strong> — analytical thinker<br>
+      <strong style="color:#555">@phi3</strong> — creative thinker<br>
+      <strong style="color:#555">@gemma2</strong> — balanced summarizer<br>
+      <strong style="color:#555">@deepseek</strong> — deep reasoning<br>
+      <strong style="color:#555">@claude</strong> — most capable (paid API)<br>
+      <strong style="color:#555">@all</strong> — all 4 local agents<br>
+      <strong style="color:#555">@debate</strong> — structured debate with rounds<br>
+      <strong style="color:#555">@talk</strong> — agents talk freely for 5 min
+    </p>
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="input-row">
+    <textarea
+      class="input-box"
+      id="input"
+      placeholder="Type a message... use @mistral @phi3 @gemma2 @deepseek @claude @all @debate @talk"
+      rows="1"
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+  </div>
+  <div class="hints">
+    <div class="hint" onclick="setInput('@all what do you think about Bitcoin right now?')">@all crypto take</div>
+    <div class="hint" onclick="setInput('@debate is AI going to replace programmers?')">@debate AI jobs</div>
+    <div class="hint" onclick="setInput('@talk the future of open source AI')">@talk free talk</div>
+    <div class="hint" onclick="setInput('@mistral explain this to me: ')">@mistral explain</div>
+    <div class="hint" onclick="setInput('@claude I need your best analysis on: ')">@claude deep dive</div>
+    <div class="hint" onclick="setInput('@deepseek reason through: ')">@deepseek reason</div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Saved to Obsidian</div>
+
+<script>
+  const messagesEl = document.getElementById('messages');
+  const inputEl    = document.getElementById('input');
+  const sendBtn    = document.getElementById('send-btn');
+  const emptyEl    = document.getElementById('empty');
+  const talkBanner = document.getElementById('talk-banner');
+  const talkTimerEl = document.getElementById('talk-timer');
+  const talkTopicEl = document.getElementById('talk-topic-label');
+
+  const agentColors = {
+    'Mistral':  '#378ADD',
+    'Phi3':     '#1D9E75',
+    'Gemma2':   '#7F77DD',
+    'DeepSeek': '#E05C5C',
+    'Claude':   '#534AB7',
+    'Summary':  '#BA7517'
+  };
+
+  // Talk session state
+  let currentTalkSession = null;
+  let talkEventSource    = null;
+  let talkTimerInterval  = null;
+  let talkEndTime        = null;
+
+  function handleKey(e){
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function autoResize(el){
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function insertMention(mention){
+    const val = inputEl.value;
+    if(!val.includes(mention)){
+      inputEl.value = val.trim() + (val.trim() ? ' ' : '') + mention + ' ';
+    }
+    inputEl.focus();
+  }
+
+  function setInput(text){
+    inputEl.value = text;
+    inputEl.focus();
+    autoResize(inputEl);
+  }
+
+  function addUserMessage(text){
+    if(emptyEl) emptyEl.remove();
+    const div = document.createElement('div');
+    div.className = 'msg-group msg-user';
+    div.innerHTML = `
+      <div class="name">You</div>
+      <div class="bubble">${escapeHtml(text)}</div>
+    `;
+    messagesEl.appendChild(div);
+    scrollBottom();
+  }
+
+  function addTyping(label){
+    const div = document.createElement('div');
+    div.className = 'typing-indicator';
+    div.id = 'typing';
+    div.innerHTML = `
+      <span style="color:#555;font-size:12px">${label} is thinking</span>
+      <div class="typing-dots">
+        <span></span><span></span><span></span>
+      </div>
+    `;
+    messagesEl.appendChild(div);
+    scrollBottom();
+    return div;
+  }
+
+  function removeTyping(){
+    const t = document.getElementById('typing');
+    if(t) t.remove();
+  }
+
+  function addAgentMessage(agent, message, color, round, isLive){
+    const div = document.createElement('div');
+    div.className = 'msg-group msg-agent';
+
+    let badge = '';
+    if(isLive){
+      badge = '<span class="round-badge live">live</span>';
+    } else if(round === 2){
+      badge = '<span class="round-badge">reacting</span>';
+    } else if(round === 3){
+      badge = '<span class="round-badge">summary</span>';
+    }
+
+    const isSummary   = agent === 'Summary';
+    const bubbleClass = isSummary ? 'bubble summary-bubble' : 'bubble';
+
+    div.innerHTML = `
+      <div class="name" style="color:${color}">
+        ${escapeHtml(agent)} ${badge}
+      </div>
+      <div class="${bubbleClass}">
+        ${formatMessage(message)}
+        <button class="save-btn" onclick="saveMessage('${escapeHtml(agent)}', this)">
+          Save to Obsidian
+        </button>
+      </div>
+    `;
+    messagesEl.appendChild(div);
+    scrollBottom();
+  }
+
+  function formatMessage(text){
+    return escapeHtml(text)
+      .replace(/\n/g, '<br>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+  }
+
+  function escapeHtml(text){
+    return String(text)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+
+  function scrollBottom(){
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  async function saveMessage(agent, btn){
+    const bubble  = btn.parentElement;
+    const content = bubble.innerText.replace('Save to Obsidian','').trim();
+    const title   = `${agent} — ${new Date().toLocaleString()}`;
+
+    btn.textContent = 'Saving...';
+    btn.disabled    = true;
+
+    const res = await fetch('/save_memory', {
+      method:  'POST',
+      headers: {'Content-Type':'application/json'},
+      body:    JSON.stringify({title, content})
+    });
+
+    if(res.ok){
+      btn.textContent = 'Saved!';
+      showToast('Saved to Obsidian vault');
+    } else {
+      btn.textContent = 'Error';
+    }
+  }
+
+  function showToast(msg){
+    const t    = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=> t.classList.remove('show'), 2500);
+  }
+
+  async function clearChat(){
+    await fetch('/clear', {method:'POST'});
+    messagesEl.innerHTML = `
+      <div class="empty-state" id="empty">
+        <h2>Meeting room is open</h2>
+        <p>Type a message to start a new conversation.</p>
+      </div>
+    `;
+  }
+
+  // ── Free Talk mode ──────────────────────────────────────────
+
+  function startTalkTimer(durationSecs){
+    talkEndTime = Date.now() + durationSecs * 1000;
+    clearInterval(talkTimerInterval);
+    talkTimerEl.className = 'talk-timer';
+
+    talkTimerInterval = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((talkEndTime - Date.now()) / 1000));
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      talkTimerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+      if(remaining === 0){
+        clearInterval(talkTimerInterval);
+        talkTimerEl.textContent = 'Summarizing...';
+        talkTimerEl.className = 'talk-timer summarizing';
+      }
+    }, 500);
+  }
+
+  function showTalkBanner(topic){
+    talkTopicEl.textContent = `"${topic}"`;
+    talkBanner.classList.add('active');
+    startTalkTimer(300);
+  }
+
+  function hideTalkBanner(){
+    talkBanner.classList.remove('active');
+    clearInterval(talkTimerInterval);
+    currentTalkSession = null;
+  }
+
+  async function stopTalk(){
+    if(!currentTalkSession) return;
+    const sessionId = currentTalkSession;
+    currentTalkSession = null;
+
+    if(talkEventSource){
+      talkEventSource.close();
+      talkEventSource = null;
+    }
+
+    hideTalkBanner();
+    sendBtn.disabled = false;
+    inputEl.disabled = false;
+    inputEl.focus();
+
+    await fetch(`/stop_talk/${sessionId}`, {method:'POST'});
+  }
+
+  async function startTalkSession(topic){
+    // POST to create the session
+    let data;
+    try {
+      const res = await fetch('/talk', {
+        method:  'POST',
+        headers: {'Content-Type':'application/json'},
+        body:    JSON.stringify({topic})
+      });
+      data = await res.json();
+    } catch(e) {
+      addAgentMessage('System', 'Could not start talk session. Is the server running?', '#666', 1, false);
+      sendBtn.disabled = false;
+      inputEl.disabled = false;
+      return;
+    }
+
+    const sessionId = data.session_id;
+    currentTalkSession = sessionId;
+    showTalkBanner(topic);
+
+    // Open SSE stream
+    const es = new EventSource(`/talk_stream/${sessionId}`);
+    talkEventSource = es;
+
+    es.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+
+      if(msg.done){
+        es.close();
+        talkEventSource = null;
+        hideTalkBanner();
+        sendBtn.disabled = false;
+        inputEl.disabled = false;
+        inputEl.focus();
+        return;
+      }
+
+      const color  = agentColors[msg.agent] || '#888';
+      const isLive = !msg.is_summary;
+      addAgentMessage(msg.agent, msg.message, color, msg.round || 1, isLive);
+    };
+
+    es.onerror = () => {
+      es.close();
+      talkEventSource = null;
+      hideTalkBanner();
+      sendBtn.disabled = false;
+      inputEl.disabled = false;
+    };
+  }
+
+  // ── Main send handler ───────────────────────────────────────
+
+  async function sendMessage(){
+    const msg = inputEl.value.trim();
+    if(!msg) return;
+
+    sendBtn.disabled = true;
+    inputEl.disabled = true;
+    inputEl.value    = '';
+    inputEl.style.height = 'auto';
+
+    addUserMessage(msg);
+
+    const msgLower = msg.toLowerCase();
+
+    // Free talk mode
+    if(msgLower.includes('@talk')){
+      const topic = msg.replace(/@talk/gi, '').trim() || 'any topic you find interesting';
+      await startTalkSession(topic);
+      return;
+    }
+
+    // Normal / debate mode
+    const isDebate = msgLower.includes('@debate');
+    const typing   = addTyping(isDebate ? 'Agents debating' : 'Agents thinking');
+
+    try {
+      const res = await fetch('/chat', {
+        method:  'POST',
+        headers: {'Content-Type':'application/json'},
+        body:    JSON.stringify({message: msg})
+      });
+
+      const data = await res.json();
+      removeTyping();
+
+      for(const r of data.responses){
+        const color = agentColors[r.agent] || '#888';
+        addAgentMessage(r.agent, r.message, color, r.round || 1, false);
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+    } catch(err){
+      removeTyping();
+      addAgentMessage('System', 'Error connecting to agents. Is the server running?', '#666', 1, false);
+    }
+
+    sendBtn.disabled = false;
+    inputEl.disabled = false;
+    inputEl.focus();
+  }
+</script>
+</body>
+</html>
