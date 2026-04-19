@@ -3,7 +3,8 @@
 
 A Flask-based multi-agent AI chat app where you summon AI agents by @mentioning them — like a team meeting, but every participant is an AI.
 
-![Agent Meeting Room](<img width="2047" height="1542" alt="agent meeting photo" src="https://github.com/user-attachments/assets/e5a83e30-a3ad-4379-a6c0-15da952027c2" />)
+Agent Meeting Room
+<img width="2047" height="1542" alt="agent meeting photo" src="https://github.com/user-attachments/assets/e5a83e30-a3ad-4379-a6c0-15da952027c2" />
 
 ---
 
