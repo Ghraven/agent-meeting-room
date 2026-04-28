@@ -1,89 +1,95 @@
+<h1 align="center">🏠 Agent Meeting Room</h1>
 
-# Agent Meeting Room
+<p align="center">
+  A Flask web app where you <code>@mention</code> AI agents into a live group chat.<br/>
+  Local models via Ollama · Claude API on demand · Streaming debates · Obsidian memory
+</p>
 
-A Flask-based multi-agent AI chat app where you summon AI agents by @mentioning them — like a team meeting, but every participant is an AI.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11%2B-blue?style=flat-square&logo=python" />
+  <img src="https://img.shields.io/badge/Flask-2.x-black?style=flat-square&logo=flask" />
+  <img src="https://img.shields.io/badge/Ollama-local-orange?style=flat-square" />
+  <img src="https://img.shields.io/badge/Claude%20API-optional-purple?style=flat-square" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" />
+</p>
 
-Agent Meeting Room
-<img width="2047" height="1542" alt="agent meeting photo" src="https://github.com/user-attachments/assets/e5a83e30-a3ad-4379-a6c0-15da952027c2" />
+<br/>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/e5a83e30-a3ad-4379-a6c0-15da952027c2" width="90%" alt="Agent Meeting Room screenshot" />
+</p>
 
 ---
 
 ## What it does
 
-- **@mention agents** to bring them into the conversation
-- **Debate mode** — agents argue in structured rounds, then summarize
-- **Free Talk mode** — agents hold a live, streaming group discussion on any topic
+Imagine a group chat where everyone at the table is an AI — each with a different personality, model, and reasoning style. You type a message, mention the agents you want, and they all respond. You can spark a structured debate, run a free-form group discussion via live streaming, or pull in Claude as the senior voice in the room.
+
+- **@mention routing** — only the agents you tag reply
+- **Debate mode** — structured 3-round argument with a final summary
+- **Free Talk** — agents stream a live discussion on any topic via SSE
 - **Memory** — save meeting notes directly to an Obsidian vault
-- **Claude on demand** — use `@claude` to bring in the Claude API as the "headmaster"
+- **@claude** — Claude API joins as the "headmaster" on demand
 
 ---
 
 ## Agents
 
-The 4 local agents use **any Ollama-compatible model** — just edit the `"model"` field in `agents.py`. The defaults below were chosen because they run well under 8B parameters (low VRAM/RAM), but you can swap in `llama3`, `qwen2`, `phi4`, `mistral-nemo`, or anything else your hardware can handle.
+All local agents run **any Ollama-compatible model** — swap by editing the `"model"` field in `agents.py`. Defaults are chosen to run under 8GB VRAM.
 
-| Agent | Default Model | Personality |
-|-------|--------------|-------------|
-| Mistral | `mistral` (~4GB) | Sharp analytical thinker |
-| Phi3 | `phi3` (~2GB) | Creative, lateral thinker |
-| Gemma2 | `gemma2:2b` (~1.5GB) | Careful, balanced summarizer |
-| DeepSeek | `deepseek-r1:7b` (~4.7GB) | Deep step-by-step reasoner |
-| Claude | `claude-sonnet-4-6` (API) | Collaborative, nuanced advisor |
+| Agent | Default Model | VRAM | Personality |
+|---|---|---|---|
+| `@mistral` | `mistral` | ~4 GB | Sharp analytical thinker |
+| `@phi3` | `phi3` | ~2 GB | Creative lateral thinker |
+| `@gemma2` | `gemma2:2b` | ~1.5 GB | Balanced careful summarizer |
+| `@deepseek` | `deepseek-r1:7b` | ~4.7 GB | Deep step-by-step reasoner |
+| `@claude` | `claude-sonnet-4-6` | API | Collaborative nuanced advisor |
 
-> **Swapping a model:** open `agents.py`, find the agent dict, change the `"model"` value to any model name from `ollama list`. That's it.
+> **Swap a model:** open `agents.py` → change the `"model"` value to anything from `ollama list`.
 
 ---
 
 ## Quick Start
 
-### 1. Clone the repo
 ```bash
+# 1. Clone
 git clone https://github.com/Ghraven/agent-meeting-room
 cd agent-meeting-room
-```
 
-### 2. Install dependencies
-```bash
+# 2. Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Install and start Ollama
-Download from [ollama.com](https://ollama.com), then pull the models:
-```bash
+# 3. Pull Ollama models
 ollama pull mistral
 ollama pull phi3
 ollama pull gemma2:2b
 ollama pull deepseek-r1:7b
-```
 
-### 4. Set up your .env
-```bash
+# 4. Set up environment
 cp .env.example .env
-# Edit .env and add your Anthropic API key
-```
+# Edit .env — add your Anthropic API key (only needed for @claude)
 
-### 5. Run the app
-```bash
+# 5. Run
 python app.py
-# OR on Windows: double-click start.bat
+# Windows: double-click start.bat
 ```
 
-Open [http://localhost:5000](http://localhost:5000)
+Open **http://localhost:5000**
 
 ---
 
 ## Usage
 
-| Command | Action |
-|---------|--------|
-| `@mistral your question` | Ask only Mistral |
-| `@phi3 @gemma2 your question` | Ask specific agents |
-| `@all your question` | All local agents respond |
-| `@claude your question` | Ask Claude API |
-| `@debate your question` | 3-round structured debate |
-| *(no mention)* | All local agents respond |
+| What you type | What happens |
+|---|---|
+| `@mistral explain quantum computing` | Only Mistral replies |
+| `@phi3 @gemma2 brainstorm ideas` | Phi3 and Gemma2 reply |
+| `@all what should I build next?` | All local agents reply |
+| `@claude review this plan` | Claude API responds |
+| `@debate is AI good or bad?` | 3-round structured debate |
+| *(no mention)* | All local agents reply |
 
-For **Free Talk mode**, click the "Free Talk" button and give the agents a topic — they'll discuss it in real time via Server-Sent Events.
+For **Free Talk**, click the Free Talk button → give a topic → agents discuss live in real time.
 
 ---
 
@@ -91,35 +97,36 @@ For **Free Talk mode**, click the "Free Talk" button and give the agents a topic
 
 ```
 agent-meeting-room/
-├── app.py              # Flask routes and SSE streaming
-├── agents.py           # Agent definitions, Ollama + Claude calls, debate logic
-├── memory.py           # Obsidian vault integration
+├── app.py              Flask routes and SSE streaming
+├── agents.py           Agent definitions, Ollama + Claude calls, debate logic
+├── memory.py           Obsidian vault integration
 ├── templates/
-│   └── index.html      # Single-page frontend (Vanilla JS)
-├── start.bat           # Windows quick-launch
-├── .env.example        # API key template
-├── requirements.txt    # Python dependencies
-└── README.md
+│   └── index.html      Single-page frontend (Vanilla JS + SSE)
+├── start.bat           Windows one-click launcher
+├── .env.example        Environment variable template
+└── requirements.txt
 ```
 
 ---
 
 ## Requirements
 
-- Python 3.11+
-- [Ollama](https://ollama.com) running locally on port 11434
-- Anthropic API key (only needed for `@claude`)
-- Optional: Obsidian for memory/note saving
+| Requirement | Notes |
+|---|---|
+| Python 3.11+ | |
+| [Ollama](https://ollama.com) | Must be running on port 11434 |
+| Anthropic API key | Only needed for `@claude` — optional |
+| [Obsidian](https://obsidian.md) | Optional — for memory/note saving |
 
 ---
 
 ## Tech Stack
 
-- **Backend:** Python 3.11, Flask
-- **Local AI:** Ollama (Mistral, Phi3, Gemma2, DeepSeek)
-- **Cloud AI:** Anthropic Claude API (`claude-sonnet-4-6`)
-- **Frontend:** Vanilla JavaScript, Server-Sent Events
-- **Memory:** Obsidian Markdown vault
+**Backend:** Python · Flask · Server-Sent Events  
+**Local AI:** Ollama (Mistral · Phi3 · Gemma2 · DeepSeek)  
+**Cloud AI:** Anthropic Claude API  
+**Frontend:** Vanilla JS · SSE streaming  
+**Memory:** Obsidian Markdown vault  
 
 ---
 
