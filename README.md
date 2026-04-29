@@ -133,3 +133,13 @@ agent-meeting-room/
 ## License
 
 MIT — see [LICENSE](LICENSE)
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) — adding a new agent takes about 5 lines.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
