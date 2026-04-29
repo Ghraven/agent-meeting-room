@@ -36,7 +36,7 @@ ideas simply. You look for common ground. Keep responses under 150 words
 unless asked for detail. You are in a group meeting with other AI agents."""
     },
     "deepseek": {
-        "model":       "iradukundadev/finetuned-deepseek-r1_7b",
+        "model":       "deepseek-r1:7b",
         "name":        "DeepSeek",
         "color":       "#E05C5C",
         "personality": """You are DeepSeek, a deep reasoning thinker.
